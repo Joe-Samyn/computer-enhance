@@ -1,4 +1,5 @@
 #include "JsonGenerator.h"
+#include "Entry.h"
 
 #include <cstdio>
 #include <random>

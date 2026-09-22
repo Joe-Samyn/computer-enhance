@@ -55,7 +55,9 @@ int main(int argc, char* argv[]) {
             Generate(args.outputFile, args.sampleSize);
         }
         else if (std::strcmp(mode, SOLVE_MODE) == 0) {
-            printf("Solve the JSON.\n");
+            const char* inputJson = argv[2];
+            Pairs pairs;
+            DeserializePairs(inputJson, pairs);
         }
         else {
             // Assume they passed an incorrect mode

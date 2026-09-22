@@ -7,9 +7,18 @@
         {
             "type": "lldb-dap",
             "request": "launch",
-            "name": "Debug",
+            "name": "Debug - Generate (OSX)",
             "program": "${workspaceFolder}/build/haversine",
             "args": ["-generate", "100", "-o", "${workspaceFolder}/sample_data.json"],
+            "env": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb-dap",
+            "request": "launch", 
+            "name": "Debug - Solve (OSX)",
+            "program": "${workspaceFolder}/build/haversine",
+            "args": ["-solve", "${workspaceFolder}/sample_data.json"],
             "env": [],
             "cwd": "${workspaceFolder}"
         }
