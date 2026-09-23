@@ -2,4 +2,4 @@
 
 #include <stdint.h>
 
-void Generate(const char* outputFile, int32_t sampleSize);
+void Generate(const char* outputFile, uint32_t sampleSize);
