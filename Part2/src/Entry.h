@@ -2,10 +2,10 @@
 
 #include <stdint.h>
 struct Entry {
-    int32_t x0;
-    int32_t y0;
-    int32_t x1;
-    int32_t y1;
+    float x0;
+    float y0;
+    float x1;
+    float y1;
 };
 
 struct Pairs {

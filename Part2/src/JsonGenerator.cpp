@@ -27,10 +27,10 @@ void WriteEntriesJson(FILE* outfile, Entry *entries, uint32_t sampleSize) {
     for (int i = 0; i < sampleSize; i++) {
         // TODO: Super overkill to determine if a ',' should be there or not at the end. Need to fix.
         if (i < sampleSize - 1) {
-            fprintf(outfile, "{\"x0\": %d, \"y0\": %d, \"x1\": %d, \"y1\": %d},", entries[i].x0, entries[i].y0, entries[i].x1, entries[i].y1);
+            fprintf(outfile, "{\"x0\": %f, \"y0\": %f, \"x1\": %f, \"y1\": %f},", entries[i].x0, entries[i].y0, entries[i].x1, entries[i].y1);
         }
         else {
-            fprintf(outfile, "{\"x0\": %d, \"y0\": %d, \"x1\": %d, \"y1\": %d}", entries[i].x0, entries[i].y0, entries[i].x1, entries[i].y1);
+            fprintf(outfile, "{\"x0\": %f, \"y0\": %f, \"x1\": %f, \"y1\": %f}", entries[i].x0, entries[i].y0, entries[i].x1, entries[i].y1);
         }
     }
 }
@@ -45,8 +45,8 @@ void Generate(const char* outputFile, uint32_t sampleSize) {
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> latitudeGen(-90, 90);
-    std::uniform_int_distribution<int> longitudeGen(-180, 180);
+    std::uniform_real_distribution<float> latitudeGen(-90.0, 90.0);
+    std::uniform_real_distribution<float> longitudeGen(-180.0, 180.0);
     for(int i = 0; i < sampleSize; i++) {
         Entry entry = {
             .x0=latitudeGen(gen),
