@@ -46,7 +46,8 @@ int main(int argc, char* argv[]) {
         {
             Pairs pairs;
             const char* inputJson = argv[2];
-            DeserializePairs(inputJson, pairs);
+            JsonValue *json = DeserializeJson(inputJson);
+            printf("Serialized.\n");
         }
         else 
         {

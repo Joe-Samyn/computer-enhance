@@ -1,6 +1,8 @@
 
 #include "Entry.h"
 
+typedef struct JsonValue JsonValue;
+
 enum JsonType {
     Object,
     Array,
@@ -10,28 +12,20 @@ enum JsonType {
     Null
 };
 
-struct JsonValue {
-    JsonType type;
-    union {
-        JsonObject object;
-        JsonArray array;
-        JsonNumber number;
-        JsonString string;
-    } value;
+struct JsonString {
+    char* value;
+    int length;
 };
 
 struct JsonPair {
-    char* key;
-    JsonValue* value;
+    JsonString *key;
+    JsonValue *value;
+    JsonPair *next;
 };
 
 struct JsonObject {
+    int count;
     JsonPair *pairs;
-};
-
-struct JsonArray {
-    JsonValue *values;
-    int length; 
 };
 
 struct JsonNumber {
@@ -40,15 +34,28 @@ struct JsonNumber {
     bool isDouble;
 };
 
-struct JsonString {
-    char* value;
-    int length;
-};
 
 struct JsonBoolean {
     bool value;
 };
 
+struct JsonArray {
+    int length;
+    JsonValue *elements;
+};
 
-void DeserializePairs(const char* jsonFile, Pairs &pairs);
-Entry DeserialzeEntry(const char* json);
+struct JsonValue {
+    JsonType type;
+    union {
+        JsonObject *object;
+        JsonArray *array;
+        JsonNumber *number;
+        JsonString *string;
+        JsonBoolean *boolean;
+    };
+};
+
+
+JsonObject* ParseJsonObject(FILE *file);
+JsonValue* ParseJsonValue(FILE *file);
+JsonValue* DeserializeJson(const char* jsonFile);

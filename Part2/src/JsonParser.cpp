@@ -3,24 +3,34 @@
 #include <cstdio>
 #include <cerrno>
 
+void RemoveWhitespace(FILE *file, char &c) 
+{
+    while(c == ' ') {
+        c = fgetc(file);
+    }
+}
+
 /**
  * Parse string from JSON string. 
  * @note Strings are limited to 10 characters in this implementation because string values in this project do not contain 
  * more than 10 characters. This is not reasonable for a general JSON parser. 
  */
-char* ParseString(FILE *file) 
+JsonString* ParseJsonString(FILE *file) 
 {
-    char* str = (char*)calloc(10, sizeof(char)); 
+    JsonString *str = (JsonString*)malloc(sizeof(JsonString));
+    str->value = (char*)calloc(10, sizeof(char)); 
+
     int i = 0;
 
     char c;
     while ((c = fgetc(file)) != '"' && i < 9)
     {
-        str[i] = c;
+        str->value[i] = c;
         i++;
     }
 
-    str[i] = '\0';
+    str->value[i++] = '\0';
+    str->length = i;
     return str;
 }
 
@@ -43,105 +53,125 @@ bool ParseBoolean(FILE *file)
     return strcmp(b, "false") == 0 ? false : true;
 }
 
-Digit ParseDigit(FILE *file, char firstDigit)
+JsonNumber* ParseJsonNumber(FILE *file, char firstDigit)
 {
-    Digit digit = {};
-    digit.value = (char*)calloc(100, sizeof(char));
-    digit.value[0] = firstDigit;
-
-    int i = 1;
-    char c;
-    while((c = fgetc(file)) && (isdigit(c) || c == '.')) 
+    JsonNumber *number = (JsonNumber*)malloc(sizeof(JsonNumber));
+    
+    char strNumber[100] = {};
+    strNumber[0] = firstDigit;
+    int index = 1;
+    char c = fgetc(file);
+    while(isdigit(c) || c == '.')
     {
-        digit.value[i] = c;
-
-        if (c == '.') {
-            digit.isFloat = true;
-        }
-
-        i++;
+        strNumber[index++] = c;
+        if (c == '.') number->isDouble = true;
+        c = fgetc(file);
     }
 
-    return digit;
+    if (number->isDouble)
+    {
+        char* endptr;
+        number->dValue = strtof(strNumber, &endptr);
+        if (endptr == strNumber)
+        {
+            printf("ERROR::Could not parse double: %s", strNumber);
+        }
+    }
+    else {
+        number->iValue = std::stoi(strNumber);
+    }
+
+    return number;
+}
+
+JsonObject* ParseJsonObject(FILE *file) 
+{
+    JsonObject *object = (JsonObject*)malloc(sizeof(JsonObject));
+    JsonPair *currentPair = object->pairs;
+
+    char c;
+    while((c = fgetc(file)) != '}')
+    {
+        RemoveWhitespace(file, c);
+
+        if (c == '\n' || c == '\t') continue;
+
+        currentPair = (JsonPair*)malloc(sizeof(JsonPair));
+        currentPair->key = ParseJsonString(file);
+        c = fgetc(file);
+
+        RemoveWhitespace(file, c);
+
+        if (c != ':') 
+        {
+            printf("ERROR::Invalid JSON object.\n");
+            return nullptr;
+        }
+
+        currentPair->value = ParseJsonValue(file);
+        currentPair = currentPair->next;
+        object->count++;
+    }
+
+    return object;
+}
+
+JsonValue* ParseJsonValue(FILE *file) 
+{
+    JsonValue *jsonValue = (JsonValue*)malloc(sizeof(JsonValue));
+
+    char c;
+    while( (c = fgetc(file)) != EOF ) 
+    {
+        RemoveWhitespace(file, c);
+
+        if (c == '\n' || c == '\t') continue;
+
+
+        if (c == '{')
+        {
+            jsonValue->type = Object;
+            jsonValue->object = ParseJsonObject(file);
+            break;
+        }
+        else if (c == '[')
+        {
+            // Parse array
+        }
+        else if (c == '"')
+        {
+            // Parse string
+        }
+        else if (c == 't' || c == 'f')
+        {
+            // Parse boolean
+        }
+        else if (isdigit(c) || c == '-')
+        {
+            jsonValue->type = Number;
+            jsonValue->number = ParseJsonNumber(file, c);
+            break;
+        }
+        else if (c == 'n')
+        {
+            // Parse null
+        }
+    }
+
+    return jsonValue;
 }
 
 
-void DeserializePairs(const char* jsonFile, Pairs &pairs) {
+JsonValue* DeserializeJson(const char* jsonFile) {
 
     // 1. Open file
     FILE* file = std::fopen(jsonFile, "r");
     if (!file) {
         printf("ERROR::%d - Could not open file %s", errno, jsonFile);
-        return;
+        return nullptr;
     }
 
-    // 2. Loop over characters until EOF
-    int c;
-    while((c = fgetc(file)) != EOF) {
-        char token = (char)c;
-        // A. match character to value
-
-        if (token == '\n' || token == ' ' || token == '\t' || token == ',') continue;
-
-        switch(token) {
-            case '{':
-            {
-                printf("Parsing object.\n");
-            } break;
-            case '}':
-            {
-                printf("End object\n");
-            }
-            case '[':
-            {
-                printf("Parsing array.\n");
-            } break;
-            case ']':
-            {
-                printf("End array.\n");
-            } break;
-            case '"':
-            {
-                char* str = ParseString(file);
-                printf("%s ", str);
-            } break;
-            case 't':
-            {   
-                bool b = ParseBoolean(file);
-                printf("Value: %d\n", b);
-            } break;
-            case 'f':
-            {
-                bool b = ParseBoolean(file);
-                printf("Value: %d\n", b);
-            } break;
-            case 'n':
-            {
-                printf("Parsing null.\n");
-            }
-            case ':':
-            {
-                printf("= ");
-            } break;
-            default:
-            {
-                Digit digit = ParseDigit(file, token);
-                if (digit.isFloat)
-                {   
-                    char* endptr;
-                    float f = std::strtof(digit.value, &endptr);
-                    if(endptr == digit.value || *endptr != '\0') 
-                        printf("ERROR::failed to parse float: %s\n", digit.value);
-                    else
-                        printf("%f\n", f);
-                } else 
-                {
-                    int i = std::stoi(digit.value);
-                    printf("%d\n", i);
-                }
-            }
-        }
-
-    }
-
+    // Recursively parse JSON 
+    return ParseJsonValue(file);
 }
+
