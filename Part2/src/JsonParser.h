@@ -39,9 +39,14 @@ struct JsonBoolean {
     bool value;
 };
 
+struct JsonArrayElement {
+    JsonValue *value;
+    JsonArrayElement *next;
+};
+
 struct JsonArray {
     int length;
-    JsonValue *elements;
+    JsonArrayElement *elements;
 };
 
 struct JsonValue {
@@ -59,3 +64,4 @@ struct JsonValue {
 JsonObject* ParseJsonObject(FILE *file);
 JsonValue* ParseJsonValue(FILE *file);
 JsonValue* DeserializeJson(const char* jsonFile);
+void DisplayAST(JsonValue *root);

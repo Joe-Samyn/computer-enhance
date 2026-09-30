@@ -2,6 +2,9 @@
 
 #include <cstdio>
 #include <cerrno>
+#include <cstring>
+
+void DisplayJsonValue(JsonValue *node, int depth);
 
 void RemoveWhitespace(FILE *file, char &c) 
 {
@@ -84,36 +87,64 @@ JsonNumber* ParseJsonNumber(FILE *file, char firstDigit)
     return number;
 }
 
+JsonPair* ParseJsonPair(FILE *file, int &count)
+{
+
+    char c;
+    while ((c = fgetc(file)) == ' ' || c == '\n' || c == '\t');
+
+    if (c == '}') return nullptr;
+
+    JsonPair *pair = (JsonPair*)malloc(sizeof(JsonPair));
+
+    pair->key = ParseJsonString(file);
+    c = fgetc(file);
+
+    RemoveWhitespace(file, c);
+
+    if (c != ':') 
+    {
+        printf("ERROR::Invalid JSON pair.\n");
+        return nullptr;
+    }
+
+    pair->value = ParseJsonValue(file);
+    pair->next = ParseJsonPair(file, ++count);
+    return pair;
+}
+
+
 JsonObject* ParseJsonObject(FILE *file) 
 {
     JsonObject *object = (JsonObject*)malloc(sizeof(JsonObject));
-    JsonPair *currentPair = object->pairs;
-
-    char c;
-    while((c = fgetc(file)) != '}')
-    {
-        RemoveWhitespace(file, c);
-
-        if (c == '\n' || c == '\t') continue;
-
-        currentPair = (JsonPair*)malloc(sizeof(JsonPair));
-        currentPair->key = ParseJsonString(file);
-        c = fgetc(file);
-
-        RemoveWhitespace(file, c);
-
-        if (c != ':') 
-        {
-            printf("ERROR::Invalid JSON object.\n");
-            return nullptr;
-        }
-
-        currentPair->value = ParseJsonValue(file);
-        currentPair = currentPair->next;
-        object->count++;
-    }
-
+    int count = 0;
+    object->pairs = ParseJsonPair(file, count);
+    object->count = count;
     return object;
+}
+
+JsonArrayElement* ParseJsonArrayElement(FILE *file, int &count)
+{
+    char c;
+    while((c = fgetc(file)) == ' ' || c == '\n' || c == '\t');
+
+    if (c == ']') return nullptr;
+
+    // TODO: This is a hack and needs to be fixed. 
+    ungetc(c, file);
+    JsonArrayElement *element = (JsonArrayElement*)malloc(sizeof(JsonArrayElement));
+    element->value = ParseJsonValue(file);
+    element->next = ParseJsonArrayElement(file, ++count);
+    return element;
+}
+
+JsonArray* ParseJsonArray(FILE *file)
+{
+    JsonArray *array = (JsonArray*)malloc(sizeof(JsonArray));
+    int count = 0;
+    array->elements = ParseJsonArrayElement(file, count);
+    array->length = count;
+    return array;
 }
 
 JsonValue* ParseJsonValue(FILE *file) 
@@ -125,7 +156,7 @@ JsonValue* ParseJsonValue(FILE *file)
     {
         RemoveWhitespace(file, c);
 
-        if (c == '\n' || c == '\t') continue;
+        if (c == '\n' || c == '\t' || c == ',' || c == '}' || c == ']') continue;
 
 
         if (c == '{')
@@ -136,11 +167,15 @@ JsonValue* ParseJsonValue(FILE *file)
         }
         else if (c == '[')
         {
-            // Parse array
+            jsonValue->type = Array;
+            jsonValue->array = ParseJsonArray(file);
+            break;
         }
         else if (c == '"')
         {
-            // Parse string
+            jsonValue->type = String;
+            jsonValue->string = ParseJsonString(file);
+            break;
         }
         else if (c == 't' || c == 'f')
         {
@@ -160,9 +195,91 @@ JsonValue* ParseJsonValue(FILE *file)
 
     return jsonValue;
 }
+void PrintDepth(int depth) 
+{
+    while (depth > 0)
+    {
+        printf("\t");
+        depth--;
+    }
+}
+
+void DisplayJsonNumber(JsonNumber *number, int depth)
+{
+    if (number->isDouble)
+        printf("%f\n", number->dValue);
+    else
+        printf("%d\n", number->iValue);
+}
+
+void DisplayJsonString(JsonString *str, int depth)
+{
+    PrintDepth(depth);
+    printf("%s\n", str->value);
+}
+
+void DisplayJsonPair(JsonPair *pair, int depth)
+{
+    if (!pair) return;
+
+    PrintDepth(depth);
+    printf("%s : ", pair->key->value);
+    DisplayJsonValue(pair->value, depth);
+    
+    DisplayJsonPair(pair->next, depth);
+}
+
+void DisplayJsonObject(JsonObject *object, int depth)
+{
+    printf("{\n");
+    DisplayJsonPair(object->pairs, ++depth);
+    printf("}\n");
+}
+
+void DisplayJsonArrayElement(JsonArrayElement *element, int depth)
+{
+    if (element == nullptr) return;
+    DisplayJsonValue(element->value, depth);
+    DisplayJsonArrayElement(element->next, depth);
+}
+
+void DisplayJsonArray(JsonArray *array, int depth)
+{
+    printf("[\n");
+    DisplayJsonArrayElement(array->elements, ++depth);
+    printf("]\n");
+}
+
+void DisplayJsonValue(JsonValue *node, int depth)
+{
+    switch(node->type)
+    {
+        case Object:
+            return DisplayJsonObject(node->object, depth);
+            break;
+        case Array:
+            DisplayJsonArray(node->array, depth);
+            break;
+        case Number:
+            DisplayJsonNumber(node->number, depth);
+            break;
+        case String:
+            DisplayJsonString(node->string, depth);
+            break;
+        case Boolean:
+            // print boolean
+            break;
+    }
+}
+
+void DisplayAST(JsonValue *root)
+{
+    DisplayJsonValue(root, -1);
+}
 
 
-JsonValue* DeserializeJson(const char* jsonFile) {
+JsonValue* DeserializeJson(const char* jsonFile) 
+{
 
     // 1. Open file
     FILE* file = std::fopen(jsonFile, "r");
@@ -172,6 +289,10 @@ JsonValue* DeserializeJson(const char* jsonFile) {
     }
 
     // Recursively parse JSON 
-    return ParseJsonValue(file);
+    JsonValue *result = ParseJsonValue(file);
+
+    DisplayAST(result);
+
+    return result;
 }
 

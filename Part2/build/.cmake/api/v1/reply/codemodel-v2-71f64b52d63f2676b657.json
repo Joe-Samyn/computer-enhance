@@ -40,7 +40,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "haversine::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-haversine-Debug-32baf56e396db2c2e0f7.json",
+					"jsonFile" : "target-haversine-Debug-681a95933a9ba7361832.json",
 					"name" : "haversine",
 					"projectIndex" : 0
 				}
@@ -50,8 +50,8 @@
 	"kind" : "codemodel",
 	"paths" : 
 	{
-		"build" : "/Users/joey/Projects/computer-enhance/Part2/build",
-		"source" : "/Users/joey/Projects/computer-enhance/Part2"
+		"build" : "/home/joey/Projects/computer-enhance/Part2/build",
+		"source" : "/home/joey/Projects/computer-enhance/Part2"
 	},
 	"version" : 
 	{
