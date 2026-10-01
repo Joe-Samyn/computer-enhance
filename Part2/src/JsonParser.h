@@ -61,7 +61,5 @@ struct JsonValue {
 };
 
 
-JsonObject* ParseJsonObject(FILE *file);
-JsonValue* ParseJsonValue(FILE *file);
 JsonValue* DeserializeJson(const char* jsonFile);
 void DisplayAST(JsonValue *root);
