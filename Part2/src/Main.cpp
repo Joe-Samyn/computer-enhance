@@ -1,5 +1,6 @@
 
 #include "Unity.cpp"
+#include "Entry.h"
 
 #include <cstdio>
 #include <cstring>
@@ -44,9 +45,9 @@ int main(int argc, char* argv[]) {
         }
         else if (std::strcmp(mode, "-solve") == 0) 
         {
-            Pairs pairs;
             const char* inputJson = argv[2];
-            JsonValue *json = DeserializeJson(inputJson);
+            CoordinatePairs pairs = DeserializeCoordinatePairs(inputJson);
+            PrintCoordinatePairs(&pairs);
         }
         else 
         {

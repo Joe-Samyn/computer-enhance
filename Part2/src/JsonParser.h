@@ -63,3 +63,5 @@ struct JsonValue {
 
 JsonValue* DeserializeJson(const char* jsonFile);
 void DisplayAST(JsonValue *root);
+
+CoordinatePairs DeserializeCoordinatePairs(const char* jsonFile);

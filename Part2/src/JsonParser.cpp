@@ -138,6 +138,7 @@ JsonArray* ParseJsonArray(FILE *file, char &c)
         element->value = ParseJsonValue(file, c);
         current->next = element;
         current = element;
+        array->length++;
     }
 
     return array;
@@ -291,8 +292,60 @@ JsonValue* DeserializeJson(const char* jsonFile)
     c = fgetc(file);
     JsonValue *result = ParseJsonValue(file, c);
 
-    DisplayAST(result);
+    //DisplayAST(result);
 
     return result;
 }
 
+Entry DeserializeEntry(JsonObject *obj)
+{
+    JsonPair *node = obj->pairs->next;
+
+    Entry entry = {};
+    while(node)
+    {
+        char *key = node->key->value;
+        if (strcmp(key, "x0") == 0)
+            entry.x0 = node->value->number->dValue;
+        else if (strcmp(key, "y0") == 0)
+            entry.y0 = node->value->number->dValue;
+        else if (strcmp(key, "x1") == 0)
+            entry.x1 = node->value->number->dValue;
+        else if (strcmp(key, "y1") == 0)
+            entry.y1 = node->value->number->dValue;
+
+            node = node->next;
+    }
+
+    return entry;
+}
+
+Entry* DeserialzeEntries(JsonArray *array)
+{
+    Entry *entries = (Entry*)malloc(sizeof(Entry) * array->length);
+    JsonArrayElement *node = array->elements->next;
+
+    int index = 0;
+    while(node)
+    {
+        entries[index] = DeserializeEntry(node->value->object);
+        node = node->next;
+        index++;
+    }
+
+    return entries;
+}
+
+CoordinatePairs DeserializeCoordinatePairs(const char* jsonFile)
+{
+    JsonValue *ast = DeserializeJson(jsonFile);
+    JsonObject *obj = ast->object;
+    JsonPair *p = obj->pairs->next;
+
+
+    CoordinatePairs pairs;
+    pairs.entries = DeserialzeEntries(p->value->array);
+    pairs.count = p->value->array->length;
+
+    return pairs;
+}
