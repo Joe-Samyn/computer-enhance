@@ -41,7 +41,7 @@ void Generate(const char* outputFile, uint32_t sampleSize) {
 
     if (!outfile) return;
 
-    Entry entries[sampleSize];
+    Entry *entries = (Entry*)malloc(sizeof(Entry) * sampleSize);
 
     std::random_device rd;
     std::mt19937 gen(rd());

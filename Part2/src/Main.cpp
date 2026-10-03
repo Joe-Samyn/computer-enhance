@@ -7,6 +7,20 @@
 #include <stdint.h>
 #include <string>
 
+void SolveForPairs(CoordinatePairs *pairs)
+{
+    Entry *entries = pairs->entries;
+    double sumCoef = 1 / (double)pairs->count;
+    double sum = 0;
+    for (int i = 0; i < pairs->count; i++)
+    {
+        double distance = HaversineDistance(entries[i]);
+        sum += distance*sumCoef;
+    }
+
+    printf("Sum: %f\n", sum);
+}
+
 void PrintHelp() {
     printf("Options:\n");
     printf("\t-generate <sample size>: Generate sample input in JSON format.\n");
@@ -47,7 +61,7 @@ int main(int argc, char* argv[]) {
         {
             const char* inputJson = argv[2];
             CoordinatePairs pairs = DeserializeCoordinatePairs(inputJson);
-            PrintCoordinatePairs(&pairs);
+            SolveForPairs(&pairs);
         }
         else 
         {

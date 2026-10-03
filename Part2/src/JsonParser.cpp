@@ -63,7 +63,7 @@ JsonNumber* ParseJsonNumber(FILE *file, char &c)
     
     char strNumber[100] = {};
     int index = 0;
-    while(c != ',' && c != '\n')
+    while(isdigit(c) || c == '-' || c == '.')
     {
         strNumber[index++] = c;
         if (c == '.') number->isDouble = true;
@@ -93,9 +93,14 @@ JsonObject* ParseJsonObject(FILE *file, char &c)
     JsonPair *current = (JsonPair*)malloc(sizeof(JsonPair));
     object->pairs = current;
 
-    while((c = fgetc(file)) != '}')
+    c = fgetc(file);
+    while(c != '}')
     {
-        if (c == ' ' || c == '\n' || c == ',') continue;
+        if (c == ' ' || c == '\n' || c == ',')
+        {
+            c = fgetc(file);
+            continue;
+        }
 
         JsonPair *pair = (JsonPair*)malloc(sizeof(JsonPair));
 
