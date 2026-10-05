@@ -25,6 +25,7 @@ void PrintHelp() {
     printf("Options:\n");
     printf("\t-generate <sample size>: Generate sample input in JSON format.\n");
     printf("\t-solve <input json>: Compute the haversine distance between each sample in the input JSON.\n");
+    printf("\t-time: View the performing timing for 1 second on this CPU platform.");
 }
 
 int GetArgument(int argc, char* argv[], const char* flag) {
@@ -43,7 +44,7 @@ int GetArgument(int argc, char* argv[], const char* flag) {
 // TODO: Support 'S' flag
 int main(int argc, char* argv[]) {
 
-    if (argc < 3) {
+    if (argc < 2) {
         PrintHelp();
     }
     else {
@@ -62,6 +63,27 @@ int main(int argc, char* argv[]) {
             const char* inputJson = argv[2];
             CoordinatePairs pairs = DeserializeCoordinatePairs(inputJson);
             SolveForPairs(&pairs);
+        }
+        else if (std::strcmp(mode, "-time") == 0)
+        {
+            unsigned long long osStartTime = GetOSTime(); // nanoseconds
+            unsigned long long osEndTime; // nanoseconds
+            unsigned long long osElapsedTime = GetOSTime() - osStartTime; // nanoseconds
+            unsigned long long osFreq = GetOSFrequency(); // ticks / second
+            unsigned long long cpuTimeStart = GetCPUTime(); // ticks/cycles
+            while(osElapsedTime < GetOSFrequency())
+            {
+                osEndTime = GetOSTime();
+                osElapsedTime = osEndTime - osStartTime;
+            }
+            
+            unsigned long long cpuTimeEnd = GetCPUTime();
+            unsigned long long cpuTimeElapsed = cpuTimeEnd - cpuTimeStart;
+
+            printf("OS Timer: %llu -> %llu = %llu elapsed\n", osStartTime, osEndTime, osElapsedTime);
+            printf("OS Seconds: %llu -> %llu elapsed\n", osElapsedTime, osElapsedTime / GetOSFrequency());
+            printf("CPU Time: %llu -> %llu = %llu elapsed\n", cpuTimeStart, cpuTimeEnd, cpuTimeElapsed);
+            printf("Approx CPU Time: %llu (Hz)\n", (cpuTimeElapsed * osFreq) / osElapsedTime);
         }
         else 
         {
