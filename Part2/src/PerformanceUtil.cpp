@@ -21,6 +21,11 @@ unsigned long long GetCPUTime()
     printf("ERROR::Function not implemented.\n");
 }
 
+unsigned long long EstimateCPUCycles(unsigned long long osTime, unsigned long long cpuTime)
+{
+    printf("ERROR::Function not implemented.\n");
+}
+
 #else 
 #include <time.h>
 
@@ -46,6 +51,11 @@ unsigned long long GetOSTime()
 unsigned long long GetCPUTime()
 {
     return __rdtsc();
+}
+
+unsigned long long EstimateCPUFrequency(unsigned long long osElapsedTime, unsigned long long cpuElapsedCycles)
+{
+    return GetOSFrequency() * cpuElapsedCycles / osElapsedTime;
 }
 
 #endif

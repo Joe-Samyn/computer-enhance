@@ -1,4 +1,5 @@
 
+#include "Constants.h"
 #include "Unity.cpp"
 #include "Entry.h"
 
@@ -7,8 +8,31 @@
 #include <stdint.h>
 #include <string>
 
+
+void PrintPerformanceMetrics()
+{
+    unsigned long long cpuFrequency = EstimateCPUFrequency((totalEndOS - totalStartOS), (totalEndCPU - totalStartCPU));
+    totalElapsedCPU = totalEndCPU - totalStartCPU;
+    unsigned long long initElapsedOS = initEndOS - initStartOS;
+    unsigned long long initElapsedCPU = initEndCPU - initStartCPU;
+    unsigned long long fileOpenElapsedOS = fileOpenEndOS - fileOpenStartOS;
+    unsigned long long fileOpenElapsedCPU = fileOpenEndCPU - fileOpenStartCPU;
+    unsigned long long jsonParseElapsedOS = jsonParseEndOS - jsonParseStartOS;
+    unsigned long long jsonParseElapsedCPU = jsonParseEndCPU - jsonParseStartCPU;
+    unsigned long long sumElapsedOS = sumEndOS - sumStartOS;
+    unsigned long long sumElapsedCPU = sumEndCPU - sumStartCPU;
+    printf("Total Time: %lluns (CPU Frequency: %llu)\n", (totalEndOS - totalStartOS), cpuFrequency);
+    printf("  Initialization: %llu (%.2f%%)\n", initElapsedCPU, ((double)initElapsedCPU / (double)totalElapsedCPU) * 100);
+    printf("  File Open: %llu (%.2f%%)\n", fileOpenElapsedCPU, ((double)fileOpenElapsedCPU / (double)totalElapsedCPU) * 100);
+    printf("  JSON Parse: %llu (%.2f%%)\n", jsonParseElapsedCPU, ((double)jsonParseElapsedCPU / (double)totalElapsedCPU) * 100);
+    printf("  Sum: %llu (%.2f%%)", sumElapsedCPU, ((double)sumElapsedCPU / (double)totalElapsedCPU) * 100);
+}
+
 void SolveForPairs(CoordinatePairs *pairs)
 {
+    sumStartOS = GetOSTime();
+    sumStartCPU = GetCPUTime();
+
     Entry *entries = pairs->entries;
     double sumCoef = 1 / (double)pairs->count;
     double sum = 0;
@@ -17,6 +41,9 @@ void SolveForPairs(CoordinatePairs *pairs)
         double distance = HaversineDistance(entries[i]);
         sum += distance*sumCoef;
     }
+    
+    sumEndOS = GetOSTime();
+    sumEndCPU = GetCPUTime();
 
     printf("Sum: %f\n", sum);
 }
@@ -42,7 +69,14 @@ int GetArgument(int argc, char* argv[], const char* flag) {
 
 
 // TODO: Support 'S' flag
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) 
+{
+
+    totalStartOS = GetOSTime();
+    totalStartCPU = GetCPUTime();
+
+    initStartOS = GetOSTime();
+    initStartCPU = GetCPUTime();
 
     if (argc < 2) {
         PrintHelp();
@@ -61,6 +95,10 @@ int main(int argc, char* argv[]) {
         else if (std::strcmp(mode, "-solve") == 0) 
         {
             const char* inputJson = argv[2];
+
+            initEndOS = GetOSTime();
+            initEndCPU = GetCPUTime();
+
             CoordinatePairs pairs = DeserializeCoordinatePairs(inputJson);
             SolveForPairs(&pairs);
         }
@@ -90,6 +128,11 @@ int main(int argc, char* argv[]) {
             PrintHelp();
         }
     }
+
+    totalEndOS = GetOSTime();
+    totalEndCPU = GetCPUTime();
+
+    PrintPerformanceMetrics();
     
     return 0;
 }

@@ -1,4 +1,5 @@
 #include "JsonParser.h"
+#include "PerformanceUtil.h"
 
 #include <cstdio>
 #include <cerrno>
@@ -285,6 +286,9 @@ void DisplayAST(JsonValue *root)
 JsonValue* DeserializeJson(const char* jsonFile) 
 {
 
+    fileOpenStartOS = GetOSTime();
+    fileOpenStartCPU = GetCPUTime();
+
     // 1. Open file
     FILE* file = std::fopen(jsonFile, "r");
     if (!file) {
@@ -292,12 +296,19 @@ JsonValue* DeserializeJson(const char* jsonFile)
         return nullptr;
     }
 
+    fileOpenEndOS = GetOSTime();
+    fileOpenEndCPU = GetCPUTime();
+
+    jsonParseStartOS = GetOSTime();
+    jsonParseStartCPU = GetCPUTime();
+
     // Recursively parse JSON 
     char c;
     c = fgetc(file);
     JsonValue *result = ParseJsonValue(file, c);
 
-    //DisplayAST(result);
+    jsonParseEndOS = GetOSTime();
+    jsonParseEndCPU = GetCPUTime();
 
     return result;
 }
