@@ -9,25 +9,6 @@
 #include <string>
 
 
-void PrintPerformanceMetrics()
-{
-    unsigned long long cpuFrequency = EstimateCPUFrequency((totalEndOS - totalStartOS), (totalEndCPU - totalStartCPU));
-    totalElapsedCPU = totalEndCPU - totalStartCPU;
-    unsigned long long initElapsedOS = initEndOS - initStartOS;
-    unsigned long long initElapsedCPU = initEndCPU - initStartCPU;
-    unsigned long long fileOpenElapsedOS = fileOpenEndOS - fileOpenStartOS;
-    unsigned long long fileOpenElapsedCPU = fileOpenEndCPU - fileOpenStartCPU;
-    unsigned long long jsonParseElapsedOS = jsonParseEndOS - jsonParseStartOS;
-    unsigned long long jsonParseElapsedCPU = jsonParseEndCPU - jsonParseStartCPU;
-    unsigned long long sumElapsedOS = sumEndOS - sumStartOS;
-    unsigned long long sumElapsedCPU = sumEndCPU - sumStartCPU;
-    printf("Total Time: %lluns (CPU Frequency: %llu)\n", (totalEndOS - totalStartOS), cpuFrequency);
-    printf("  Initialization: %llu (%.2f%%)\n", initElapsedCPU, ((double)initElapsedCPU / (double)totalElapsedCPU) * 100);
-    printf("  File Open: %llu (%.2f%%)\n", fileOpenElapsedCPU, ((double)fileOpenElapsedCPU / (double)totalElapsedCPU) * 100);
-    printf("  JSON Parse: %llu (%.2f%%)\n", jsonParseElapsedCPU, ((double)jsonParseElapsedCPU / (double)totalElapsedCPU) * 100);
-    printf("  Sum: %llu (%.2f%%)", sumElapsedCPU, ((double)sumElapsedCPU / (double)totalElapsedCPU) * 100);
-}
-
 void SolveForPairs(CoordinatePairs *pairs)
 {
     sumStartOS = GetOSTime();
@@ -128,11 +109,6 @@ int main(int argc, char* argv[])
             PrintHelp();
         }
     }
-
-    totalEndOS = GetOSTime();
-    totalEndCPU = GetCPUTime();
-
-    PrintPerformanceMetrics();
     
     return 0;
 }

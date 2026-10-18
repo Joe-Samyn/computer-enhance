@@ -1,5 +1,6 @@
 
 #include "PerformanceUtil.cpp"
+#include "Instrumentation.cpp"
 #include "JsonGenerator.cpp"
 #include "JsonParser.cpp"
 #include "MathUtil.cpp"
