@@ -53,11 +53,7 @@ int GetArgument(int argc, char* argv[], const char* flag) {
 int main(int argc, char* argv[]) 
 {
 
-    totalStartOS = GetOSTime();
-    totalStartCPU = GetCPUTime();
-
-    initStartOS = GetOSTime();
-    initStartCPU = GetCPUTime();
+    BeginProfile;
 
     if (argc < 2) {
         PrintHelp();
@@ -108,6 +104,8 @@ int main(int argc, char* argv[])
         {
             PrintHelp();
         }
+
+        EndProfile;
     }
     
     return 0;
