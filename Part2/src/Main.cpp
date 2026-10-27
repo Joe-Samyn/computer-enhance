@@ -53,7 +53,7 @@ int GetArgument(int argc, char* argv[], const char* flag) {
 int main(int argc, char* argv[]) 
 {
 
-    BeginProfile;
+    BeginProfile();
 
     if (argc < 2) {
         PrintHelp();
@@ -105,7 +105,7 @@ int main(int argc, char* argv[])
             PrintHelp();
         }
 
-        EndProfile;
+        EndProfile();
     }
     
     return 0;

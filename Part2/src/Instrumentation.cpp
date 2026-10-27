@@ -1,48 +1,37 @@
 #include "Instrumentation.h"
 
-
-
-
 /* Performance Profiler Class Implementation */
 PerformanceProfiler::PerformanceProfiler(const char* name)
 {
-    this->name = name;
-    this->start = GetCPUTime();
+    measurement = PerformanceMeasurement();
+    measurement.name = name;
+    start = GetCPUTime();
 }
 
 PerformanceProfiler::~PerformanceProfiler()
 {
-    this->end = GetCPUTime();
-    PerformanceProfiler::GlobalInstance().measurments.emplace(this->name, this->end - this->start);
+    unsigned long long end = GetCPUTime();
+    measurement.elapsed = start - end;
+    GlobalProfiler.measurements[__COUNTER__] = measurement;
 }
 
-PerformanceProfiler& PerformanceProfiler::GlobalInstance()
+static void BeginProfile(void)
 {
-    static PerformanceProfiler profiler = {};
-    return profiler;
+    GlobalProfiler = Profiler();
+    GlobalProfiler.name = "Main";
+    GlobalProfiler.start = GetCPUTime();
 }
 
-void PerformanceProfiler::StartProfiling()
+static void EndProfile(void)
 {
-    this->start = GetCPUTime();
+    GlobalProfiler.end = GetCPUTime();
+    GlobalProfiler.elapsed = GlobalProfiler.end - GlobalProfiler.start;
+
+    PrintResults(GlobalProfiler);
 }
 
-
-void PerformanceProfiler::EndProfiling()
+static void PrintResults(Profiler &profiler)
 {
-    this->end = GetCPUTime();
-    this->elapsed = this->end - this->start;
-    PrintPerformanceResults();
-}
-
-void PerformanceProfiler::PrintPerformanceResults()
-{
-
-    printf("Performance Profiling Results\n");
-    printf("Program Cycles: %llu cycles\n", this->elapsed);
-    for (const auto& [blockName, measurement] : measurments)
-    {
-        double percent = ((double)measurement / (double)this->elapsed) * 100;
-        printf("%s: %llu cycles (%.2f%%)\n", blockName, measurement, percent);
-    }
+    printf("Performance Results\n");
+    printf("%s Elapsed: %llu\n", profiler.name, profiler.elapsed);
 }
