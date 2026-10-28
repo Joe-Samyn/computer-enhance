@@ -21,9 +21,10 @@ struct Profiler
 struct PerformanceProfiler
 {
     unsigned long long start;
+    int measurementIndex;
     PerformanceMeasurement measurement;
 
-    PerformanceProfiler(const char* name);
+    PerformanceProfiler(const char* name, int counter);
     ~PerformanceProfiler();
 };
 
@@ -31,8 +32,10 @@ static Profiler GlobalProfiler;
 
 #define CONCAT(a, b) a##b
 #define ConcatName(a, b) CONCAT(a, b)
-#define TimeFunction PerformanceProfiler ConcatName(fun, __LINE__) = PerformanceProfiler(__func__);
-#define TimeBlock(name) PerformanceProfiler ConcatName(block, __LINE__) = PerformanceProfiler(name);
+#define TimeFunction PerformanceProfiler ConcatName(fun, __LINE__) = PerformanceProfiler(__func__, __COUNTER__);
+#define TimeBlock(name) PerformanceProfiler ConcatName(block, __LINE__) = PerformanceProfiler(name, __COUNTER__);
+
+#define ArrayCount(array) sizeof(array) / sizeof(array[0])
 
 static void BeginProfile(void);
 static void EndProfile(void);
