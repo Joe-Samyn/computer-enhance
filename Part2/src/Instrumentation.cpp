@@ -4,44 +4,58 @@
 PerformanceProfiler::PerformanceProfiler(const char* name, int counter)
 {   
     measurementIndex = counter;
-    measurement = PerformanceMeasurement();
-    measurement.name = name;
+    parentIndex = CurrentProfilerIndex;
+    CurrentProfilerIndex = measurementIndex;
+    GlobalProfiler.measurements[measurementIndex].name = name;
     start = GetCPUTime();
 }
 
 PerformanceProfiler::~PerformanceProfiler()
 {
-    unsigned long long end = GetCPUTime();
-    measurement.elapsed = end - start;
-    GlobalProfiler.measurements[measurementIndex] = measurement;
+    unsigned long long elapsed = GetCPUTime() - start;
+
+    PerformanceMeasurement* parent = GlobalProfiler.measurements + parentIndex;
+    PerformanceMeasurement* current = GlobalProfiler.measurements + measurementIndex;
+
+    CurrentProfilerIndex = parentIndex;
+    current->elapsed = elapsed;
+
+    if (parent != current)
+        parent->childrenElapsed += elapsed;
 }
 
 static void BeginProfile(void)
 {
     GlobalProfiler = Profiler();
-    GlobalProfiler.name = "Main";
     GlobalProfiler.start = GetCPUTime();
 }
 
 static void EndProfile(void)
 {
     GlobalProfiler.end = GetCPUTime();
-    GlobalProfiler.elapsed = GlobalProfiler.end - GlobalProfiler.start;
 
     PrintResults(GlobalProfiler);
 }
 
 static void PrintResults(Profiler &profiler)
 {
+    unsigned long long globalElapsed = profiler.end - profiler.start;
     printf("Performance Results\n");
-    printf("%s Elapsed: %llu\n", profiler.name, profiler.elapsed);
+    printf("%s Elapsed: %llu\n", "Main", globalElapsed);
 
     for (int i = 0; i < ArrayCount(profiler.measurements); i++)
     {
         PerformanceMeasurement measurement = profiler.measurements[i];
         if (measurement.elapsed)
         {
-            printf("%s: %llu (%0.2f%%)\n", measurement.name, measurement.elapsed, ((double)measurement.elapsed / (double)profiler.elapsed) * 100);
+            if (measurement.childrenElapsed)
+            {
+                printf("%s: %llu (%0.2f%%, %0.2f%% w/ Children)\n", measurement.name, measurement.elapsed, ((double)(measurement.elapsed - measurement.childrenElapsed) / (double)globalElapsed) * 100, (double)measurement.elapsed / (double)globalElapsed * 100);
+            }
+            else 
+            {
+                printf("%s: %llu (%0.2f%%)\n", measurement.name, measurement.elapsed, ((double)measurement.elapsed / (double)globalElapsed) * 100);
+            }
         }
     }
 }

@@ -343,16 +343,17 @@ Entry* DeserialzeEntries(JsonArray *array)
 CoordinatePairs DeserializeCoordinatePairs(const char* jsonFile)
 {
     TimeFunction;
-
-    TimeBlock("DeserializeJson");
+    
     JsonValue *ast = DeserializeJson(jsonFile);
     JsonObject *obj = ast->object;
     JsonPair *p = obj->pairs->next;
 
-    TimeBlock("DeserializeEntries");
-    CoordinatePairs pairs;
-    pairs.entries = DeserialzeEntries(p->value->array);
-    pairs.count = p->value->array->length;
+    {
+        TimeBlock("DeserializeEntries");
+        CoordinatePairs pairs;
+        pairs.entries = DeserialzeEntries(p->value->array);
+        pairs.count = p->value->array->length;
+        return pairs;
+    }
 
-    return pairs;
 }

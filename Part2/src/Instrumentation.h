@@ -6,29 +6,29 @@ struct PerformanceMeasurement
 {
     const char* name;
     unsigned long long elapsed;
+    unsigned long long childrenElapsed;
 };
 
 struct Profiler
 {
-    const char* name;
     unsigned long long start;
     unsigned long long end;
-    unsigned long long elapsed;
 
     PerformanceMeasurement measurements[4096];
 };
 
 struct PerformanceProfiler
 {
-    unsigned long long start;
     int measurementIndex;
-    PerformanceMeasurement measurement;
+    int parentIndex;
+    unsigned long long start;
 
     PerformanceProfiler(const char* name, int counter);
     ~PerformanceProfiler();
 };
 
 static Profiler GlobalProfiler;
+static unsigned int CurrentProfilerIndex;
 
 #define CONCAT(a, b) a##b
 #define ConcatName(a, b) CONCAT(a, b)
