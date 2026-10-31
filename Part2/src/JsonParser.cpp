@@ -154,6 +154,8 @@ JsonArray* ParseJsonArray(FILE *file, char &c)
 
 JsonValue* ParseJsonValue(FILE *file, char &c) 
 {
+    TimeFunction;
+
     RemoveWhitespace(file, c);
     while (c == '\n' || c == '\t' || c == ',') c = fgetc(file);
 
@@ -161,6 +163,7 @@ JsonValue* ParseJsonValue(FILE *file, char &c)
 
     if (c == '{')
     {
+        TimeBlock("ParseObject");
         jsonValue->type = Object;
         jsonValue->object = ParseJsonObject(file, c);
     }
@@ -342,14 +345,12 @@ Entry* DeserialzeEntries(JsonArray *array)
 
 CoordinatePairs DeserializeCoordinatePairs(const char* jsonFile)
 {
-    TimeFunction;
     
     JsonValue *ast = DeserializeJson(jsonFile);
     JsonObject *obj = ast->object;
     JsonPair *p = obj->pairs->next;
 
     {
-        TimeBlock("DeserializeEntries");
         CoordinatePairs pairs;
         pairs.entries = DeserialzeEntries(p->value->array);
         pairs.count = p->value->array->length;
