@@ -61,6 +61,8 @@ bool ParseBoolean(FILE *file)
 
 JsonNumber* ParseJsonNumber(FILE *file, char &c)
 {
+    TimeFunction;
+
     JsonNumber *number = (JsonNumber*)malloc(sizeof(JsonNumber));
     
     char strNumber[100] = {};
@@ -91,6 +93,8 @@ JsonNumber* ParseJsonNumber(FILE *file, char &c)
 
 JsonObject* ParseJsonObject(FILE *file, char &c) 
 {
+    TimeFunction;
+
     JsonObject *object = (JsonObject*)malloc(sizeof(JsonObject));
     JsonPair *current = (JsonPair*)malloc(sizeof(JsonPair));
     object->pairs = current;
@@ -133,6 +137,8 @@ JsonObject* ParseJsonObject(FILE *file, char &c)
 
 JsonArray* ParseJsonArray(FILE *file, char &c)
 {
+    TimeFunction;
+
     JsonArray *array = (JsonArray*)malloc(sizeof(JsonArray));
     JsonArrayElement *current = (JsonArrayElement*)malloc(sizeof(JsonArrayElement));
     array->elements = current;
@@ -154,6 +160,7 @@ JsonArray* ParseJsonArray(FILE *file, char &c)
 
 JsonValue* ParseJsonValue(FILE *file, char &c) 
 {
+
     TimeFunction;
 
     RemoveWhitespace(file, c);
@@ -163,7 +170,6 @@ JsonValue* ParseJsonValue(FILE *file, char &c)
 
     if (c == '{')
     {
-        TimeBlock("ParseObject");
         jsonValue->type = Object;
         jsonValue->object = ParseJsonObject(file, c);
     }
@@ -193,6 +199,7 @@ JsonValue* ParseJsonValue(FILE *file, char &c)
 
     return jsonValue;
 }
+
 void PrintDepth(int depth) 
 {
     while (depth > 0)

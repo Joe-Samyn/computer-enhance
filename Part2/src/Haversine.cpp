@@ -1,12 +1,15 @@
 
 #include "Haversine.h"
 #include "MathUtil.h"
+#include "Instrumentation.h"
 
 #include <math.h>
 
 
 double HaversineDistance(Entry entry)
 {
+    TimeFunction;
+    
     double x0Radians = DegreesToRadians(entry.x0);
     double y0Radians = DegreesToRadians(entry.y0);
     double x1Radians = DegreesToRadians(entry.x1);

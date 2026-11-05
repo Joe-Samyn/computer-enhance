@@ -11,6 +11,9 @@
 
 void SolveForPairs(CoordinatePairs *pairs)
 {
+
+    TimeFunction;
+
     sumStartOS = GetOSTime();
     sumStartCPU = GetCPUTime();
 
@@ -36,6 +39,9 @@ void PrintHelp() {
     printf("\t-time: View the performing timing for 1 second on this CPU platform.");
 }
 
+/**
+ * TODO: Debug this function call to determine root cause of measurements not being recorded into Global
+ */
 int GetArgument(int argc, char* argv[], const char* flag) {
 
     int i = 1;

@@ -81,6 +81,107 @@
         - Inclusive % = Function Invlusive Runtime / Program Total Runtime
  */
 
- /*
-    TODO (Joe): Design the Data Structure to support this instrumentation based profiler
- */
+ #define ArrayCount(array) sizeof(array) / sizeof(array[0]);
+
+ /**
+  * Global metrics for an instrumented function or block
+  */
+ struct GlobalPerformanceMeasurement {
+
+    /**
+     * Name or label for the function being measured. 
+     */
+    const char* label;
+
+    /**
+     * Total exclusive cycles spent in a function. 
+     */
+    unsigned long long exclusiveElapsed;
+
+    /**
+     * Total cycles spent in function, including all time spent in nested/child function calls. 
+     */
+    unsigned long long totalInclusiveElapsed; 
+
+    /**
+     * Total number of times a function/block has been invoked. 
+     */
+    unsigned long long invocationCount;
+
+    /**
+     * The number of currently active invocations. 
+     * @note If 0, there are no current active invocations running.
+     */
+    unsigned long long activeInvocations;
+ };
+
+ /**
+  * Invocation based metrics for a function or block
+  */
+ struct InvocationPerformanceMeasurement {
+     
+    /**
+     * Cycles elapsed at start of measurement. 
+     */
+    unsigned long long start; 
+
+    /**
+     * Cycles elapsed at end of measurement;
+     */
+    unsigned long long end; 
+
+    /**
+     * Inded of the global measurement for the function 
+     */
+    unsigned int index;
+
+    /**
+     * The total cycles spent in nested or child function calls. 
+     * @note This is used to determine a function or blocks exclusive cycle time. 
+     */
+    unsigned long long childInclusiveElapsed;
+
+    /**
+     * Parent measurement for current invocation
+     */
+    InvocationPerformanceMeasurement *parent;
+
+    InvocationPerformanceMeasurement(const char* label, unsigned int index);
+    ~InvocationPerformanceMeasurement();
+
+ };
+
+ /**
+  * Global profiler data structure managing all performance metrics for instrumented function, blocks, and the program. 
+  */
+ struct GlobalProfiler {
+
+    /**
+     * Cycles elapsed at start of global profiler measurement. 
+     */
+    unsigned long long start; 
+
+    /**
+     * Cycles elapsed at end of global profiler measurement. 
+     */
+    unsigned long long end; 
+
+    /**
+     * Global level metrics for all profiled/instrumented functions/blocks. 
+     * @note This supports up to 4096 function/blocks being instrumented. This is mainly an arbitrary number chosen. It can be increased later if needed. 
+     */
+    GlobalPerformanceMeasurement globalMeasurements[4096];
+
+ };
+
+ static GlobalProfiler Profiler;
+ static InvocationPerformanceMeasurement *CurrentParent;
+
+ #define CONCAT(a, b) a##b
+ #define ConcatName(a, b) CONCAT(a, b)
+ #define TimeFunction InvocationPerformanceMeasurement ConcatName(fun_, __LINE__) = InvocationPerformanceMeasurement(__func__, __COUNTER__);
+ #define TimeBlock(label) InvocationPerformanceMeasurement ConcatName(block_, __LINE__) = InvocationPerformanceMeasurement(label, __COUNTER__);
+
+ void BeginProfile();
+ void EndProfile();
+ void PrintResults();
