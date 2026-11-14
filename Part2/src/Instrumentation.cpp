@@ -33,6 +33,9 @@ InvocationPerformanceMeasurement::~InvocationPerformanceMeasurement()
     globalMeasurement->activeInvocations--;
     globalMeasurement->invocationCount++;
     
+    // Set this parent back to CurrentParent
+    CurrentParent = parent;
+    
     // Check if this is root and no parent function exists
     if(globalMeasurement->activeInvocations == 0)
     {
@@ -43,20 +46,19 @@ InvocationPerformanceMeasurement::~InvocationPerformanceMeasurement()
     {
         // Add inclusive to parents->childInclusiveElapsed
         parent->childInclusiveElapsed += inclusiveElapsed;
-
-        // Set this parent back to CurrentParent
-        CurrentParent = parent;
     }
 }
 
 void BeginProfile()
 {
     Profiler.start = GetCPUTime();
+    Profiler.startTime = GetOSTime();
 }
 
 void EndProfile()
 {
     Profiler.end = GetCPUTime();
+    Profiler.endTime = GetOSTime();
     PrintResults();
 }
 
@@ -100,12 +102,20 @@ static void PrintMeasurement(
            inclusiveText);
 }
 
+void PrintGlobalMetrics(unsigned long long globalElapsed, unsigned long long globalElapsedTime)
+{
+    unsigned long long ms = 1000 * globalElapsedTime / GetOSFrequency();
+    printf("Total Runtime: %llu ms [%llu cycles]\n", ms, globalElapsed);
+}
+
 void PrintResults()
 {
+    unsigned long long globalElapsed = Profiler.end - Profiler.start;
+    unsigned long long globalElapsedTime = Profiler.endTime - Profiler.startTime;
+    int length = ArrayCount(Profiler.globalMeasurements);
+    PrintGlobalMetrics(globalElapsed, globalElapsedTime);
     PrintMeasurementHeader();
 
-    unsigned long long globalElapsed = Profiler.end - Profiler.start;
-    int length = ArrayCount(Profiler.globalMeasurements);
     for (int i = 0; i < length; i++)
     {
         GlobalPerformanceMeasurement m = Profiler.globalMeasurements[i];

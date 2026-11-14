@@ -61,8 +61,6 @@ bool ParseBoolean(FILE *file)
 
 JsonNumber* ParseJsonNumber(FILE *file, char &c)
 {
-    TimeFunction;
-
     JsonNumber *number = (JsonNumber*)malloc(sizeof(JsonNumber));
     
     char strNumber[100] = {};
@@ -93,8 +91,6 @@ JsonNumber* ParseJsonNumber(FILE *file, char &c)
 
 JsonObject* ParseJsonObject(FILE *file, char &c) 
 {
-    TimeFunction;
-
     JsonObject *object = (JsonObject*)malloc(sizeof(JsonObject));
     JsonPair *current = (JsonPair*)malloc(sizeof(JsonPair));
     object->pairs = current;
@@ -137,8 +133,6 @@ JsonObject* ParseJsonObject(FILE *file, char &c)
 
 JsonArray* ParseJsonArray(FILE *file, char &c)
 {
-    TimeFunction;
-
     JsonArray *array = (JsonArray*)malloc(sizeof(JsonArray));
     JsonArrayElement *current = (JsonArrayElement*)malloc(sizeof(JsonArrayElement));
     array->elements = current;
@@ -160,9 +154,6 @@ JsonArray* ParseJsonArray(FILE *file, char &c)
 
 JsonValue* ParseJsonValue(FILE *file, char &c) 
 {
-
-    TimeFunction;
-
     RemoveWhitespace(file, c);
     while (c == '\n' || c == '\t' || c == ',') c = fgetc(file);
 
@@ -296,6 +287,8 @@ void DisplayAST(JsonValue *root)
 
 JsonValue* DeserializeJson(const char* jsonFile) 
 {
+    TimeFunction;
+    
     // 1. Open file
     FILE* file = std::fopen(jsonFile, "r");
     if (!file) {
@@ -336,6 +329,8 @@ Entry DeserializeEntry(JsonObject *obj)
 
 Entry* DeserialzeEntries(JsonArray *array)
 {
+    TimeFunction;
+    
     Entry *entries = (Entry*)malloc(sizeof(Entry) * array->length);
     JsonArrayElement *node = array->elements->next;
 
@@ -357,11 +352,9 @@ CoordinatePairs DeserializeCoordinatePairs(const char* jsonFile)
     JsonObject *obj = ast->object;
     JsonPair *p = obj->pairs->next;
 
-    {
-        CoordinatePairs pairs;
-        pairs.entries = DeserialzeEntries(p->value->array);
-        pairs.count = p->value->array->length;
-        return pairs;
-    }
+    CoordinatePairs pairs;
+    pairs.entries = DeserialzeEntries(p->value->array);
+    pairs.count = p->value->array->length;
+    return pairs;
 
 }

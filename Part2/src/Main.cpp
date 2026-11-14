@@ -26,9 +26,6 @@ void SolveForPairs(CoordinatePairs *pairs)
         sum += distance*sumCoef;
     }
     
-    sumEndOS = GetOSTime();
-    sumEndCPU = GetCPUTime();
-
     printf("Sum: %f\n", sum);
 }
 

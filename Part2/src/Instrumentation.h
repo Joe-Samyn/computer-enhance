@@ -1,6 +1,8 @@
 #pragma once 
 
-#include "PerformanceUtil.h"
+#ifndef PROFILE
+#define PROFILE 0
+#endif 
 
 /*
     -- Specifications for Instrumentation Based Profiler --
@@ -167,6 +169,16 @@
     unsigned long long end; 
 
     /**
+     * OS time captured at start of global profiler measurement
+     */
+    unsigned long long startTime;
+    
+    /**
+     * OS time captured at end of global profiler measurement
+     */
+    unsigned long long endTime;
+
+    /**
      * Global level metrics for all profiled/instrumented functions/blocks. 
      * @note This supports up to 4096 function/blocks being instrumented. This is mainly an arbitrary number chosen. It can be increased later if needed. 
      */
@@ -177,11 +189,21 @@
  static GlobalProfiler Profiler;
  static InvocationPerformanceMeasurement *CurrentParent;
 
+ #if PROFILE
+ 
  #define CONCAT(a, b) a##b
  #define ConcatName(a, b) CONCAT(a, b)
  #define TimeFunction InvocationPerformanceMeasurement ConcatName(fun_, __LINE__) = InvocationPerformanceMeasurement(__func__, __COUNTER__);
  #define TimeBlock(label) InvocationPerformanceMeasurement ConcatName(block_, __LINE__) = InvocationPerformanceMeasurement(label, __COUNTER__);
+ 
+ #else
+
+ #define TimeFunction
+ #define TimeBlock(...)
+
+ #endif
 
  void BeginProfile();
  void EndProfile();
  void PrintResults();
+ void PrintGlobalMetrics(unsigned long long globalElapsed, unsigned long long globalElapsedTime);

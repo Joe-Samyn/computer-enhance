@@ -7,3 +7,5 @@ project(HaversineSolver
 set(SRC src/Main.cpp)
 
 add_executable(haversine ${SRC})
+
+target_compile_definitions(haversine PRIVATE PROFILE=1)
