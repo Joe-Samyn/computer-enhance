@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-InvocationPerformanceMeasurement::InvocationPerformanceMeasurement(const char* label, unsigned int index)
+InvocationPerformanceMeasurement::InvocationPerformanceMeasurement(const char* label, unsigned int index, unsigned int bytes)
 {    
 
     GlobalPerformanceMeasurement *globalMeasurement = Profiler.globalMeasurements + index;
@@ -20,6 +20,7 @@ InvocationPerformanceMeasurement::InvocationPerformanceMeasurement(const char* l
     this->parent = CurrentParent;
     CurrentParent = this;
     globalMeasurement->activeInvocations++;
+    globalMeasurement->totalBytesProcessed += bytes;
 }
 
 InvocationPerformanceMeasurement::~InvocationPerformanceMeasurement()
@@ -64,15 +65,17 @@ void EndProfile()
 
 void PrintMeasurementHeader(void)
 {
-    printf("%-24s %12s %16s %16s %14s %14s\n",
+    printf("%-24s %12s %16s %16s %14s %14s %14s %14s\n",
            "Function",
            "Calls",
            "Inclusive",
            "Exclusive",
            "Exclusive %",
-           "Inclusive %");
+           "Inclusive %",
+           "MBs",
+           "GB/s");
 
-    printf("------------------------------------------------------------------------------------------------------\n");
+    printf("-------------------------------------------------------------------------------------------------------------------------------------------\n");
 }
 
 
@@ -82,7 +85,9 @@ static void PrintMeasurement(
     uint64_t inclusive,
     uint64_t exclusive,
     double exclusivePercent,
-    double inclusivePercent)
+    double inclusivePercent,
+    double mbsProcessed,
+    double gbPerSecond)
 {
     char exclusiveText[32];
     char inclusiveText[32];
@@ -93,25 +98,29 @@ static void PrintMeasurement(
     snprintf(inclusiveText, sizeof(inclusiveText),
              "%.2f%%", inclusivePercent);
 
-    printf("%-24s %12" PRIu64 " %16" PRIu64 " %16" PRIu64 " %14s %14s\n",
+    printf("%-24s %12" PRIu64 " %16" PRIu64 " %16" PRIu64 " %14s %14s %14.3f %14.3f\n",
            label,
            calls,
            inclusive,
            exclusive,
            exclusiveText,
-           inclusiveText);
+           inclusiveText,
+           mbsProcessed,
+           gbPerSecond);
 }
 
 void PrintGlobalMetrics(unsigned long long globalElapsed, unsigned long long globalElapsedTime)
 {
     unsigned long long ms = 1000 * globalElapsedTime / GetOSFrequency();
     printf("Total Runtime: %llu ms [%llu cycles]\n", ms, globalElapsed);
+    printf("Estimated CPU Frequency: %llu Hz [%0.2f GHz]\n", EstimateCPUFrequency(globalElapsedTime, globalElapsed), (double)EstimateCPUFrequency(globalElapsedTime, globalElapsed) / (double)1000000000);
 }
 
 void PrintResults()
 {
     unsigned long long globalElapsed = Profiler.end - Profiler.start;
     unsigned long long globalElapsedTime = Profiler.endTime - Profiler.startTime;
+    unsigned long long cpuTimerFrequency = EstimateCPUTimerFrequency();
     int length = ArrayCount(Profiler.globalMeasurements);
     PrintGlobalMetrics(globalElapsed, globalElapsedTime);
     PrintMeasurementHeader();
@@ -122,6 +131,14 @@ void PrintResults()
         if (m.label == 0x00)
             continue;
         
-        PrintMeasurement(m.label, m.invocationCount, m.totalInclusiveElapsed, m.exclusiveElapsed, ((double)m.exclusiveElapsed / (double)globalElapsed) * 100, ((double)m.totalInclusiveElapsed / (double)globalElapsed) * 100);
+        double mb = (double)m.totalBytesProcessed / (double)(1024 * 1024);
+        PrintMeasurement(
+            m.label, m.invocationCount, 
+            m.totalInclusiveElapsed, 
+            m.exclusiveElapsed, 
+            ((double)m.exclusiveElapsed / (double)globalElapsed) * 100, 
+            ((double)m.totalInclusiveElapsed / (double)globalElapsed) * 100,
+            mb,
+            cpuTimerFrequency * mb/(1024 * m.totalInclusiveElapsed));
     }
 }

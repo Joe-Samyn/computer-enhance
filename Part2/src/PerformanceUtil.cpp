@@ -32,12 +32,12 @@ unsigned long long EstimateCPUCycles(unsigned long long osTime, unsigned long lo
 /*
     NOTE: On Linux, we just return 1,000,000,000 to convert to nanoseconds as this is the units used by Linux. 
 */
-unsigned long long GetOSFrequency()
+unsigned long long GetOSFrequency(void)
 {
     return 1000000000; 
 }
 
-unsigned long long GetOSTime()
+unsigned long long GetOSTime(void)
 {
     struct timespec ts;
     int timeResult = clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -48,7 +48,7 @@ unsigned long long GetOSTime()
     return timestamp;
 }
 
-unsigned long long GetCPUTime()
+unsigned long long GetCPUTime(void)
 {
     return __rdtsc();
 }
@@ -56,6 +56,30 @@ unsigned long long GetCPUTime()
 unsigned long long EstimateCPUFrequency(unsigned long long osElapsedTime, unsigned long long cpuElapsedCycles)
 {
     return GetOSFrequency() * cpuElapsedCycles / osElapsedTime;
+}
+
+unsigned long long EstimateCPUTimerFrequency()
+{
+
+    unsigned int timeToWaitMs = 100;
+    unsigned long long timeToWaitTicks = timeToWaitMs * GetOSFrequency() / 1000;
+
+    unsigned long long startOS = GetOSTime();
+    unsigned long long endOS = GetOSTime();
+
+    unsigned long long startCPU = GetCPUTime();
+
+    while(endOS - startOS < timeToWaitTicks) {
+        endOS = GetOSTime();
+    }
+
+    unsigned long long elapsedCPU = GetCPUTime() - startCPU;
+    unsigned long long elapsedOS = endOS - startOS;
+
+    unsigned long long cpuFrequency = GetOSFrequency() * elapsedCPU / elapsedOS;
+
+    return cpuFrequency;
+
 }
 
 #endif

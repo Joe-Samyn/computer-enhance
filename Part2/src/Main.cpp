@@ -12,7 +12,7 @@
 void SolveForPairs(CoordinatePairs *pairs)
 {
 
-    TimeFunction;
+    TimeDataThroughput("CoordinatePairs", pairs->count * sizeof(Entry));
 
     sumStartOS = GetOSTime();
     sumStartCPU = GetCPUTime();

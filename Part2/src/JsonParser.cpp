@@ -1,10 +1,12 @@
 #include "JsonParser.h"
-#include "PerformanceUtil.h"
 #include "Instrumentation.h"
 
 #include <cstdio>
 #include <cerrno>
 #include <cstring>
+
+// Need to only include if on Linux
+#include <sys/stat.h>
 
 void DisplayJsonValue(JsonValue *node, int depth);
 JsonObject* ParseJsonObject(FILE *file, char &c);
@@ -296,10 +298,18 @@ JsonValue* DeserializeJson(const char* jsonFile)
         return nullptr;
     }
 
-    // Recursively parse JSON 
-    char c;
-    c = fgetc(file);
-    JsonValue *result = ParseJsonValue(file, c);
+    struct stat st;
+    stat(jsonFile, &st);
+    int64_t size = (int64_t)st.st_size;
+
+    JsonValue *result;
+    {
+        TimeDataThroughput("ParseJsonValue", size);
+        
+        char c;
+        c = fgetc(file);
+        result = ParseJsonValue(file, c);
+    }
 
     return result;
 }

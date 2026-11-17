@@ -115,6 +115,11 @@
      * @note If 0, there are no current active invocations running.
      */
     unsigned long long activeInvocations;
+
+    /**
+     * Total amount of bytes processed by the function or block
+     */
+    unsigned int totalBytesProcessed;
  };
 
  /**
@@ -148,7 +153,7 @@
      */
     InvocationPerformanceMeasurement *parent;
 
-    InvocationPerformanceMeasurement(const char* label, unsigned int index);
+    InvocationPerformanceMeasurement(const char* label, unsigned int index, unsigned int bytes = 0);
     ~InvocationPerformanceMeasurement();
 
  };
@@ -195,11 +200,13 @@
  #define ConcatName(a, b) CONCAT(a, b)
  #define TimeFunction InvocationPerformanceMeasurement ConcatName(fun_, __LINE__) = InvocationPerformanceMeasurement(__func__, __COUNTER__);
  #define TimeBlock(label) InvocationPerformanceMeasurement ConcatName(block_, __LINE__) = InvocationPerformanceMeasurement(label, __COUNTER__);
+ #define TimeDataThroughput(label, size) InvocationPerformanceMeasurement ConcatName(block, __LINE__) = InvocationPerformanceMeasurement(label, __COUNTER__, size);
  
  #else
 
  #define TimeFunction
  #define TimeBlock(...)
+ #define TimeDataThroughput(...)
 
  #endif
 
