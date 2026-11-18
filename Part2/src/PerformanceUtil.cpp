@@ -48,6 +48,15 @@ unsigned long long GetOSTime(void)
     return timestamp;
 }
 
+unsigned long long GetOSTimeMS(void)
+{
+    unsigned long long ticks = GetOSTime();
+
+    unsigned long long ms = 1000 * ticks / GetOSFrequency();
+
+    return ms;
+}
+
 unsigned long long GetCPUTime(void)
 {
     return __rdtsc();
@@ -81,5 +90,10 @@ unsigned long long EstimateCPUTimerFrequency()
     return cpuFrequency;
 
 }
+
+double CPUTimeToMs(unsigned long long cpuTime, unsigned long long cpuFreq)
+{
+    return 1000 * (double)cpuTime / (double)cpuFreq;
+}   
 
 #endif

@@ -16,7 +16,8 @@
 					"source" : ".",
 					"targetIndexes" : 
 					[
-						0
+						0,
+						1
 					]
 				}
 			],
@@ -31,7 +32,8 @@
 					"name" : "HaversineSolver",
 					"targetIndexes" : 
 					[
-						0
+						0,
+						1
 					]
 				}
 			],
@@ -42,6 +44,13 @@
 					"id" : "haversine::@6890427a1f51a3e7e1df",
 					"jsonFile" : "target-haversine-Debug-aea89b67c3c49f9db61e.json",
 					"name" : "haversine",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "repition_test::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-repition_test-Debug-500a2c56a4245a08000f.json",
+					"name" : "repition_test",
 					"projectIndex" : 0
 				}
 			]
