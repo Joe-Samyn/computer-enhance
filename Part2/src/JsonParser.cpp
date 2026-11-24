@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cerrno>
 #include <cstring>
+#include <string>
 
 // Need to only include if on Linux
 #include <sys/stat.h>

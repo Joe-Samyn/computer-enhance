@@ -1,32 +1,37 @@
-
 #include "PerformanceUtil.h"
 
 #include <cstdio>
+
+#if defined(_MSC_VER)
+#include <intrin.h>
+#else
 #include <x86intrin.h>
+#endif
 
-#if _WIN32
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
 
-unsigned long long GetOSTime()
+unsigned long long GetOSTime(void)
 {
-    printf("ERROR::Function not implemented.\n");
+    LARGE_INTEGER counter;
+    QueryPerformanceCounter(&counter);
+    return static_cast<unsigned long long>(counter.QuadPart);
 }
 
-unsigned long long GetOSFrequency()
+unsigned long long GetOSFrequency(void)
 {
-    printf("ERROR::Function not implemented.\n");
+    static const unsigned long long frequency = [] {
+        LARGE_INTEGER countsPerSecond;
+        QueryPerformanceFrequency(&countsPerSecond);
+        return static_cast<unsigned long long>(countsPerSecond.QuadPart);
+    }();
+    return frequency;
 }
 
-unsigned long long GetCPUTime()
-{
-    printf("ERROR::Function not implemented.\n");
-}
-
-unsigned long long EstimateCPUCycles(unsigned long long osTime, unsigned long long cpuTime)
-{
-    printf("ERROR::Function not implemented.\n");
-}
-
-#else 
+#else
 #include <time.h>
 
 /*
@@ -47,6 +52,8 @@ unsigned long long GetOSTime(void)
     long timestamp = GetOSFrequency()*ts.tv_sec + ts.tv_nsec;
     return timestamp;
 }
+
+#endif
 
 unsigned long long GetOSTimeMS(void)
 {
@@ -94,6 +101,4 @@ unsigned long long EstimateCPUTimerFrequency()
 double CPUTimeToMs(unsigned long long cpuTime, unsigned long long cpuFreq)
 {
     return 1000 * (double)cpuTime / (double)cpuFreq;
-}   
-
-#endif
+}

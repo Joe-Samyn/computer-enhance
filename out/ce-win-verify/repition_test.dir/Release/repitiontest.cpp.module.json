@@ -1,0 +1,13 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "repition_test.dir\\Release\\RepitionTest.obj",
+            "outputs": [
+                "repition_test.dir\\Release\\"
+            ],
+            "requires": []
+        }
+    ]
+}

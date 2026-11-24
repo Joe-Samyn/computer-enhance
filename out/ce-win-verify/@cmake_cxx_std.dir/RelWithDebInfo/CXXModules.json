@@ -1,0 +1,12 @@
+{
+	"import-error" : 
+	{
+		"message" : "Unsupported generator: Visual Studio 18 2026",
+		"modules" : 
+		[
+			"std",
+			"std.compat"
+		]
+	},
+	"modules" : {}
+}

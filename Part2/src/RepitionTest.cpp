@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 #include <cstdlib>
+#include <climits>
+#include <sys/stat.h>
 
 #define RUNTIME 10000
 
@@ -27,7 +29,7 @@ struct Buffer {
     /**
      * Number of bytes read
      */
-    unsigned long count;
+    unsigned long long count;
 };
 
 struct TestRunConfiguration {
@@ -36,6 +38,11 @@ struct TestRunConfiguration {
      * Path and name of the file to read for tests
      */
     const char* file;
+
+    /**
+     * @brief Size of file in bytes
+     */
+    long long fileSize;
 
     /**
      * Current elapsed time in milliseconds
@@ -84,50 +91,81 @@ struct TestRunResults {
 void PrintRow(const char* label, long bytes, unsigned long long elapsed, unsigned long long cpuFrequency)
 {
     double ms = CPUTimeToMs(elapsed, cpuFrequency);
-    double throughput = (1000 * bytes) / (1024*1024*1024*ms);
+    double throughput = (1000.0 * bytes) / (1024*1024*1024*ms);
     printf("%s: %llu [%0.2f ms]    [%.3f GB/s]\n", label, elapsed, ms, throughput);
 }
 
-void PrintResults(const char* name, unsigned long bytes, TestRunResults *results, TestRunConfiguration *configuration)
+void PrintResults(const char* name, TestRunResults *results, TestRunConfiguration *configuration)
 {
     printf("                                    \n");
     
     printf("-- %s --\n", name);
-    PrintRow("MIN", bytes, results->min, configuration->cpuFrequency);
-    PrintRow("AVG", bytes, results->total / results->numberOfRuns, configuration->cpuFrequency);
-    PrintRow("MAX", bytes, results->max, configuration->cpuFrequency);
+    PrintRow("MIN", configuration->fileSize, results->min, configuration->cpuFrequency);
+    PrintRow("AVG", configuration->fileSize, results->total / results->numberOfRuns, configuration->cpuFrequency);
+    PrintRow("MAX", configuration->fileSize, results->max, configuration->cpuFrequency);
 }
 
-long GetFileSize(FILE *file)
+long long GetFileSize(const char* file)
 {
-    if (fseek(file, 0, SEEK_END) != 0)
+    struct __stat64 info;
+
+    if (_stat64(file, &info) != 0)
     {
-        return 0;
+        perror("_stat64");
+        return -1;
     }
 
-    long fileSize = ftell(file);
-    if (fileSize < 0)
-    {
-        fclose(file);
-        return 0;
-    }
-
-    // Return to the beginning.
-    if (fseek(file, 0, SEEK_SET) != 0)
-    {
-        fclose(file);
-        return 0;
-    }
-
-    return fileSize;
+    return info.st_size;
 }
 
-void ReadFile(Buffer *b, TestRunConfiguration *configuration, TestRunResults *results)
+void ReadFileWithAlloc(TestRunConfiguration *configuration, TestRunResults *results)
 {
     FILE *file = fopen(configuration->file, "rb");
-    b->count = (unsigned long)GetFileSize(file);
-    b->buffer = (char*)malloc(b->count * sizeof(char));
+    unsigned long long start = GetCPUTime();
+    Buffer b = {
+        .buffer = (char*)malloc(configuration->fileSize * sizeof(char)),
+        .count = (unsigned long long)GetFileSize(configuration->file)
+    };
 
+    int result = fread(b.buffer, sizeof(char), b.count, file);
+    unsigned long long end = GetCPUTime();
+
+    // File read error because result == 0
+    if (!result)
+    {
+        printf("ERROR::Could not read file.\n");
+        results->error = ERROR_FILE_READ;
+    }
+
+    // Read bytes != expected byte count
+    if (result != b.count)
+    {
+        printf("ERROR::Byte count mismatch.\n");
+        results->error = ERROR_SIZE_MISMATCH;
+    }
+
+    // No errors occurred, record results
+    if (result == b.count)
+    {
+        unsigned long long elapsed = end - start;
+        if (results->min > elapsed)
+        {
+            results->min = elapsed;
+            configuration->timer = GetOSTimeMS();
+        }
+        results->total += elapsed;
+        results->max = results->max < elapsed ? elapsed : results->max;
+        results->numberOfRuns++;
+
+        fclose(file);
+    }
+
+    free(b.buffer);
+}
+
+void ReadFileWithoutAlloc(Buffer* b, TestRunConfiguration* configuration, TestRunResults* results)
+{
+    FILE* file = fopen(configuration->file, "rb");
     unsigned long long start = GetCPUTime();
     int result = fread(b->buffer, sizeof(char), b->count, file);
     unsigned long long end = GetCPUTime();
@@ -135,7 +173,7 @@ void ReadFile(Buffer *b, TestRunConfiguration *configuration, TestRunResults *re
     // File read error because result == 0
     if (!result)
     {
-        printf("ERROR::Could not read file.\n");
+        perror(configuration->file);
         results->error = ERROR_FILE_READ;
     }
 
@@ -158,27 +196,40 @@ void ReadFile(Buffer *b, TestRunConfiguration *configuration, TestRunResults *re
         results->total += elapsed;
         results->max = results->max < elapsed ? elapsed : results->max;
         results->numberOfRuns++;
+        fclose(file);
     }
-
-    free(b->buffer);
-    fclose(file);
 }
 
-void TestFRead(TestRunConfiguration *configuration)
+void TestFReadWithAlloc(TestRunConfiguration *configuration)
 {
     TestRunResults results = {
-        .min = __INT_MAX__
+        .min = INT_MAX
     };
-
-    Buffer b = {};
 
     configuration->timer = GetOSTimeMS();
     while (GetOSTimeMS() - configuration->timer < RUNTIME)
     {
-        ReadFile(&b, configuration, &results);
+        ReadFileWithAlloc(configuration, &results);
     }
 
-    PrintResults("fread", b.count, &results, configuration);
+    PrintResults("fread - Alloc", &results, configuration);
+}
+
+void TestFReadNoAlloc(TestRunConfiguration* configuration, Buffer *buffer)
+{
+    TestRunResults results = {
+        .min = INT_MAX
+    };
+
+
+    configuration->timer = GetOSTimeMS();
+    while (GetOSTimeMS() - configuration->timer < RUNTIME)
+    {
+        ReadFileWithoutAlloc(buffer, configuration, &results);
+    }
+
+    PrintResults("fread - No Alloc", &results, configuration);
+
 }
 
 
@@ -194,13 +245,21 @@ int main(int argc, const char* argv[])
 
     TestRunConfiguration configuration = {
         .file = file,
+        .fileSize = GetFileSize(file),
         .timer = 10000,
         .displayNewMin = false,
         .cpuFrequency = EstimateCPUTimerFrequency()
     };
 
-    TestFRead(&configuration);
-    TestFRead(&configuration);
+    Buffer b = {};
+    b.buffer = (char*)malloc(sizeof(char) * configuration.fileSize);
+    b.count = configuration.fileSize;
+
+    while(true)
+    {
+        TestFReadWithAlloc(&configuration);
+        TestFReadNoAlloc(&configuration, &b);
+    }
 
     return 0;
 }
