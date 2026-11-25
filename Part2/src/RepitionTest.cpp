@@ -20,6 +20,25 @@ enum Error {
     ERROR_SIZE_MISMATCH
 };
 
+enum Measurements
+{
+    MIN_RUNTIME,
+    MAX_RUNTIME,
+    MIN_PAGEFAULT_COUNT,
+    MAX_PAGEFAULT_COUNT,
+    TOTAL_PAGEFAULT_COUNT,
+    TOTAL_RUNTIME,
+    TOTAL_RUN_COUNT,
+    ERROR_NO,
+
+    Measurements_Count
+};
+
+struct TestResults
+{
+    unsigned long long results[Measurements_Count];
+};
+
 struct Buffer {
     /**
      * Buffer for read file contents
@@ -61,48 +80,23 @@ struct TestRunConfiguration {
     unsigned long long cpuFrequency;
 };
 
-struct TestRunResults {
-    /**
-     * Minimum runtime for the test run 
-     */
-    unsigned long long min;
 
-    /**
-     * Total summed runtime for the test runs
-     */
-    unsigned long long total;
-
-    /**
-     * Maximum runtime for the test run
-     */
-    unsigned long long max;
-
-    /**
-     * The number of times the test was ran
-     */
-    unsigned long long numberOfRuns;
-
-    /**
-     * Error that occurred while reading the file. If no error occurs, this is ERROR_NONE
-     */
-    Error error;
-};
-
-void PrintRow(const char* label, long bytes, unsigned long long elapsed, unsigned long long cpuFrequency)
+void PrintRow(const char* label, long bytes, unsigned long long elapsed, unsigned long long pfCount, unsigned long long cpuFrequency)
 {
     double ms = CPUTimeToMs(elapsed, cpuFrequency);
     double throughput = (1000.0 * bytes) / (1024*1024*1024*ms);
-    printf("%s: %llu [%0.2f ms]    [%.3f GB/s]\n", label, elapsed, ms, throughput);
+    printf("%s: %llu [%0.2f ms]    [%.3f GB/s]    [%d Page Faults]\n", label, elapsed, ms, throughput, pfCount);
 }
 
-void PrintResults(const char* name, TestRunResults *results, TestRunConfiguration *configuration)
+void PrintResults(const char* name, TestResults *testResults, TestRunConfiguration *configuration)
 {
     printf("                                    \n");
     
     printf("-- %s --\n", name);
-    PrintRow("MIN", configuration->fileSize, results->min, configuration->cpuFrequency);
-    PrintRow("AVG", configuration->fileSize, results->total / results->numberOfRuns, configuration->cpuFrequency);
-    PrintRow("MAX", configuration->fileSize, results->max, configuration->cpuFrequency);
+    printf("File Size: %llu bytes\n", configuration->fileSize);
+    PrintRow("MIN", configuration->fileSize, testResults->results[MIN_RUNTIME], testResults->results[MIN_PAGEFAULT_COUNT], configuration->cpuFrequency);
+    PrintRow("AVG", configuration->fileSize, testResults->results[TOTAL_RUNTIME] / testResults->results[TOTAL_RUN_COUNT], testResults->results[TOTAL_PAGEFAULT_COUNT] / testResults->results[TOTAL_RUN_COUNT], configuration->cpuFrequency);
+    PrintRow("MAX", configuration->fileSize, testResults->results[MAX_RUNTIME], testResults->results[MAX_PAGEFAULT_COUNT], configuration->cpuFrequency);
 }
 
 long long GetFileSize(const char* file)
@@ -118,44 +112,51 @@ long long GetFileSize(const char* file)
     return info.st_size;
 }
 
-void ReadFileWithAlloc(TestRunConfiguration *configuration, TestRunResults *results)
+void ReadFileWithAlloc(TestRunConfiguration *configuration, TestResults *testResults)
 {
     FILE *file = fopen(configuration->file, "rb");
-    unsigned long long start = GetCPUTime();
+    unsigned long long elapsed = GetCPUTime();
+    unsigned long long pageFaults = GetPageFaultCount();
     Buffer b = {
         .buffer = (char*)malloc(configuration->fileSize * sizeof(char)),
         .count = (unsigned long long)GetFileSize(configuration->file)
     };
 
     int result = fread(b.buffer, sizeof(char), b.count, file);
-    unsigned long long end = GetCPUTime();
+    elapsed = GetCPUTime() - elapsed;
+    pageFaults = GetPageFaultCount() - pageFaults;
 
     // File read error because result == 0
     if (!result)
     {
         printf("ERROR::Could not read file.\n");
-        results->error = ERROR_FILE_READ;
+        testResults->results[ERROR_NO] = ERROR_FILE_READ;
     }
 
     // Read bytes != expected byte count
     if (result != b.count)
     {
         printf("ERROR::Byte count mismatch.\n");
-        results->error = ERROR_SIZE_MISMATCH;
+        testResults->results[ERROR_NO] = ERROR_SIZE_MISMATCH;
     }
 
     // No errors occurred, record results
     if (result == b.count)
     {
-        unsigned long long elapsed = end - start;
-        if (results->min > elapsed)
+        if (testResults->results[MIN_RUNTIME] > elapsed)
         {
-            results->min = elapsed;
+            testResults->results[MIN_RUNTIME] = elapsed;
             configuration->timer = GetOSTimeMS();
         }
-        results->total += elapsed;
-        results->max = results->max < elapsed ? elapsed : results->max;
-        results->numberOfRuns++;
+
+        if (testResults->results[MAX_RUNTIME] < elapsed)
+        {
+            testResults->results[MAX_RUNTIME] = elapsed;
+            testResults->results[MAX_PAGEFAULT_COUNT] = pageFaults;
+        }
+        testResults->results[TOTAL_RUNTIME] += elapsed;
+        testResults->results[TOTAL_PAGEFAULT_COUNT] += pageFaults;
+        testResults->results[TOTAL_RUN_COUNT]++;
 
         fclose(file);
     }
@@ -163,72 +164,80 @@ void ReadFileWithAlloc(TestRunConfiguration *configuration, TestRunResults *resu
     free(b.buffer);
 }
 
-void ReadFileWithoutAlloc(Buffer* b, TestRunConfiguration* configuration, TestRunResults* results)
+void ReadFileWithoutAlloc(Buffer* b, TestRunConfiguration* configuration, TestResults* testResults)
 {
     FILE* file = fopen(configuration->file, "rb");
-    unsigned long long start = GetCPUTime();
+    unsigned long long elapsed = GetCPUTime();
+    unsigned long long pageFaults = GetPageFaultCount();
     int result = fread(b->buffer, sizeof(char), b->count, file);
-    unsigned long long end = GetCPUTime();
+    elapsed = GetCPUTime() - elapsed;
+    pageFaults = GetPageFaultCount() - pageFaults;
 
     // File read error because result == 0
     if (!result)
     {
-        perror(configuration->file);
-        results->error = ERROR_FILE_READ;
+        printf("ERROR::Could not read file.\n");
+        testResults->results[ERROR_NO] = ERROR_FILE_READ;
     }
 
     // Read bytes != expected byte count
     if (result != b->count)
     {
         printf("ERROR::Byte count mismatch.\n");
-        results->error = ERROR_SIZE_MISMATCH;
+        testResults->results[ERROR_NO] = ERROR_SIZE_MISMATCH;
     }
 
     // No errors occurred, record results
     if (result == b->count)
     {
-        unsigned long long elapsed = end - start;
-        if (results->min > elapsed)
+        if (testResults->results[MIN_RUNTIME] > elapsed)
         {
-            results->min = elapsed;
+            testResults->results[MIN_RUNTIME] = elapsed;
             configuration->timer = GetOSTimeMS();
         }
-        results->total += elapsed;
-        results->max = results->max < elapsed ? elapsed : results->max;
-        results->numberOfRuns++;
+
+        if (testResults->results[MAX_RUNTIME] < elapsed)
+        {
+            testResults->results[MAX_RUNTIME] = elapsed;
+            testResults->results[MAX_PAGEFAULT_COUNT] = pageFaults;
+        }
+        testResults->results[TOTAL_RUNTIME] += elapsed;
+        testResults->results[TOTAL_PAGEFAULT_COUNT] += pageFaults;
+        testResults->results[TOTAL_RUN_COUNT]++;
+
         fclose(file);
     }
 }
 
 void TestFReadWithAlloc(TestRunConfiguration *configuration)
 {
-    TestRunResults results = {
-        .min = INT_MAX
-    };
+    TestResults testResults = {};
+    testResults.results[MIN_RUNTIME] = INT_MAX;
+    testResults.results[MAX_RUNTIME] = 0;
 
     configuration->timer = GetOSTimeMS();
     while (GetOSTimeMS() - configuration->timer < RUNTIME)
     {
-        ReadFileWithAlloc(configuration, &results);
+        ReadFileWithAlloc(configuration, &testResults);
     }
 
-    PrintResults("fread - Alloc", &results, configuration);
+    PrintResults("fread - Alloc", &testResults, configuration);
 }
 
 void TestFReadNoAlloc(TestRunConfiguration* configuration, Buffer *buffer)
 {
-    TestRunResults results = {
-        .min = INT_MAX
-    };
+    TestResults testResults = {};
+    testResults.results[MIN_RUNTIME] = INT_MAX;
+    testResults.results[MAX_RUNTIME] = 0;
 
 
     configuration->timer = GetOSTimeMS();
     while (GetOSTimeMS() - configuration->timer < RUNTIME)
     {
-        ReadFileWithoutAlloc(buffer, configuration, &results);
+        ReadFileWithoutAlloc(buffer, configuration, &testResults);
     }
 
-    PrintResults("fread - No Alloc", &results, configuration);
+    PrintResults("fread - No Alloc", &testResults, configuration);
 
 }
 
@@ -254,6 +263,8 @@ int main(int argc, const char* argv[])
     Buffer b = {};
     b.buffer = (char*)malloc(sizeof(char) * configuration.fileSize);
     b.count = configuration.fileSize;
+
+    InitializeMemoryTooling();
 
     while(true)
     {

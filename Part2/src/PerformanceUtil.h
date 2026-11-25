@@ -17,6 +17,17 @@ unsigned long long GetOSTimeMS(void);
 unsigned long long GetOSFrequency(void);
 
 /**
+ * @brief Initialize the memory capture tool for the OS
+ */
+void InitializeMemoryTooling();
+
+/**
+ * @brief Get the number of page faults that have occured in the process from the OS
+ * @return Number of page faults that have occurred for this process
+ */
+unsigned long long GetPageFaultCount();
+
+/**
  * Get the approximate CPU time (cycles) via RDTSC.
  */
 unsigned long long GetCPUTime(void);

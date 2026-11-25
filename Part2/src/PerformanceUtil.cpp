@@ -4,6 +4,8 @@
 
 #if defined(_MSC_VER)
 #include <intrin.h>
+#include <windows.h>
+#include <psapi.h>
 #else
 #include <x86intrin.h>
 #endif
@@ -12,7 +14,8 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include <windows.h>
+
+HANDLE hProcess;
 
 unsigned long long GetOSTime(void)
 {
@@ -29,6 +32,19 @@ unsigned long long GetOSFrequency(void)
         return static_cast<unsigned long long>(countsPerSecond.QuadPart);
     }();
     return frequency;
+}
+
+void InitializeMemoryTooling()
+{
+    
+    hProcess = GetCurrentProcess();
+}
+
+unsigned long long GetPageFaultCount()
+{
+    PROCESS_MEMORY_COUNTERS pmc;
+    GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc));
+    return pmc.PageFaultCount;
 }
 
 #else
